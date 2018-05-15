@@ -1,0 +1,306 @@
+---
+title: "Assignment 9"
+author: "Giridhur S"
+date: "13 May 2018"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Assignment 9 
+Giridhur S, EE13B129
+
+
+## Question 1
+
+College Distance dataset
+```{r q1_setup}
+library(ggplot2)
+#Loading the dataset
+data = read.csv("CollegeDistance.csv")
+
+```
+
+a. Scatter plot of completed education against distances to nearest college. 
+
+```{r q1_a}
+
+ggplot(data = data,aes(x=ed,y=dist)) + geom_point(color = "coral",size = 2) + labs(title = "Education and college distance", y ="Distance to nearest college", x= "Yrs of education" )
+```
+
+b. Run a regression of years of completed education on distance to the nearest college
+
+```{r q1b}
+
+q1_b = lm(ed ~ dist, data = data)
+summary(q1_b)
+
+```
+
+We see that the slope with ed ie, years of completed education is negative, meaning distance of the nearest college is negatively correlated with the years of completed education. 
+The estimated intercept is 13.955 (yrs), and slope is -0.07337 .
+This means that the closer the college is, the average years of schooling the students go to INCREASES, meaning more kids goto college.
+
+c. Bob's high school was 20 miles from college, predict years of completed education. How would it change if he lived 10 miles away from college?
+
+```{r q1_c}
+cat("If Bob lives 20 miles from college, he's predicted to have completed ", predict(q1_b,data.frame(dist=2))," years of college \n")
+cat("If Bob lives 10 miles from college, he's predicted to have completed ", predict(q1_b,data.frame(dist=1))," years of college \n")
+
+```
+
+d. Does distance to college explain a large fraction of the variation in education attainment across individuals? Explain. 
+
+No, distance to college DOES NOT explain a large fraction of variation in education attainment across individuals. This is clearly evident from the very low R^2 value (0.00745) displayed by the predictor. 
+
+Also, basic reasoning tells us that there are more factors that affect a person's access to education in reality, viz, financial conditions, race, gender etc. 
+
+e. Value of standard error
+
+Standard error for this particular example is reported as :  1.807, by the linear regression routine. 
+Units are "years of education", and same as units of the predicted variable ( "ed" in this case)
+
+f. R^2 
+
+Adjusted R^2 is reported to be 0.00745, which is defined as $R_{adj}^{2} = 1 - (1-R^2) \frac{n-1}{n-p-1}$, with n = number of observations and p = number of independent variables (predictors)
+
+```{r q1_f}
+cat("R^2 for the given model is : ",summary(q1_b)$r.squared, "\n")
+```
+
+g. Including *all predictors* and checking results.
+
+```{r q1_g}
+q1_g = lm(ed~ ., data = data)
+summary(q1_g)
+```
+
+From the above summary we see that : 
+
+1. Race, Income, parental education, test scores are highly significant predictors of education level, this is in line with our expectations, 
+
+2. Distance is not that significant an indicator for this exercise. 
+
+3. Suprisingly, tuition fees is not an important predictor, although income is. 
+
+4. We may use polynomial regression to get a better fit, since the overall R^2 in this case is quite low as well. 
+
+
+
+## Question 2
+
+Facebook Social Network Database. 
+
+Tools used : ggplot, linear regression, xlsx
+Reading the data
+
+```{r echo=FALSE}
+#reading data
+library(xlsx)
+q2_data = read.xlsx("FacebookData.xlsx",1)
+```
+### General distribution of data set
+
+Ages of the profiles collected (histogram)
+
+```{r q2_1_a}
+cat("Summaries of Age \n")
+summary(q2_data$Age)
+age_hist  = ggplot(q2_data,aes(Age)) + scale_fill_brewer(palette = "Spectral") + geom_density(color="blue",fill="lightblue") +  labs(title="Density of age of profiles")
+age_hist
+
+```
+
+Gender distribution of the profiles collected (pie chart)
+
+```{r q2_1_b}
+genders = c("Female","Male","Other")
+q2_data$Gender_ = genders[q2_data$Gender+1] 
+labels = c("Male","Female")
+n_male = sum(q2_data$Gender==1)
+n_female = sum(q2_data$Gender==0)
+n_other = length(q2_data$Gender) - n_male - n_female
+df_ = data.frame("gender"=c("Male","Female","Other"),"freq"=c(n_male,n_female,n_other))
+pie = ggplot(df_, aes(x = "", y=freq, fill = factor(gender))) + 
+  geom_bar(width = 1, stat = "identity") +
+  theme(axis.line = element_blank(), 
+        plot.title = element_text(hjust=0.5)) + 
+  labs(fill="Gender", 
+       x=NULL, 
+       y=NULL, 
+       title="Pie Chart of Gender", 
+       caption="Source: Facebook dataset") #creates a bar plot
+pie = pie + coord_polar(theta = "y", start=0) #making it  a pie chart
+pie
+```
+
+
+Plotting Number of friends for each person
+
+```{r q2_1_c}
+cat("Summaries of number of friends \n")
+summary(q2_data$Friends)
+friend_hist  = ggplot(q2_data,aes(Friends)) + scale_fill_brewer(palette = "Spectral") + geom_density(color="blue",fill="lightblue") +  labs(title="Number of friends per person")
+friend_hist
+```
+
+We can do a similar analysis for other variables in this data set too, ie use a pie chart for Indicator variables and Histogram for numerical variables. 
+Indicator variables are : Gender, Sexuality, Employed(?), Profile, Cover, Relationship, Children, and location variables.
+
+Pie chart of location :
+```{r q2_1_d}
+n_inUS = sum(q2_data$USA)
+n_notInUS = length(q2_data$USA) - n_inUS
+n_MidWest = sum(q2_data$MidWest)
+n_Seast = sum(q2_data$Seast)
+n_West = sum(q2_data$West)
+n_otherUS = n_inUS - (n_MidWest+n_Seast+n_West)
+df_ = data.frame("location"=c("Not in US","Other parts of US","Western States","MidWest-States","SouthEast States"),"freq"=c(n_notInUS,n_otherUS,n_West,n_MidWest,n_Seast))
+
+pie = ggplot(df_, aes(x = "", y=freq, fill = factor(location))) + 
+  geom_bar(width = 1, stat = "identity") +
+  theme(axis.line = element_blank(), 
+        plot.title = element_text(hjust=0.5)) + 
+  labs(fill="Location", 
+       x=NULL, 
+       y=NULL, 
+       title="Pie Chart of Location", 
+       caption="Source: Facebook dataset") #creates a bar plot
+pie = pie + coord_polar(theta = "y", start=0) #making it  a pie chart
+pie
+
+
+```
+
+
+Now we'll start looking at other statistics that pertain to the overall goal : 
+"How do these variables correlate with the number of friends?"
+We'll examine : 
+variation of number of Friends with prominent facebook properties : gender,age, DP and cover pic, as these are the most visible aspects of anyone's profile. 
+
+```{r q2_1_e}
+
+#violin plot with gender
+violin_nF_gender  = ggplot(q2_data,aes(Gender_,Friends)) + scale_fill_brewer(palette = "Accent") + geom_violin(aes(fill=factor(Gender_)),draw_quantiles = TRUE) + labs(title = "Violin Plot", subtitle="Number of friends vs Gender", x="Gender",y="Number of Friends") 
+violin_nF_gender
+
+```
+
+A more detailed look through a histogram reveals : 
+```{r q2_1_e2}
+frndGendHist = ggplot(q2_data,aes(Friends,fill=Gender_))+scale_fill_brewer(palette = "Paired")+ geom_density(position="stack") 
+frndGendHist
+```
+
+This shows us that Females tend to have more friends than Males on average.
+
+Now we examine, number of friends with age
+
+Here we take the average of the number of friends per age so as to standardize the data (black line represents)
+```{r q2_1_f}
+ggplot(q2_data,aes(Age,Friends)) + geom_point(color = "coral",size=2) + theme_gray() + labs(title="Number of Friends with Age") + stat_summary(fun.y="mean",color="black",geom="line")
+```
+
+Here again we see that younger people tend to have more friends  as expected, familiarity with technology, even after adjustment for number of people in a given age. 
+
+We'll now see how likes are distributed and if they correlate to number of friends, since a like that a person receives is usually from their friends, they are expected to be highly correlated.
+```{r q2_1_g}
+
+mean_likes = as.integer(mean(q2_data$Likes))
+line_ = paste("Mean value =",toString(mean_likes))
+
+ggplot(q2_data,aes(Likes)) + scale_fill_brewer(palette = "Spectral") + geom_density(color="red",fill="coral") +  labs(title="Number of Likes per person") + geom_vline(xintercept = mean_likes,color = "black",linetype="dashed") + annotate("text",x=(mean_likes+100), label=line_, y=0.01, colour="red",size = 4)
+
+ggplot(q2_data,aes(Likes,Friends)) + scale_fill_brewer(palette = "Spectral") + theme_gray() + geom_point(color = "coral",size=2) + labs(title="Number of Friends with Likes") + stat_summary(fun.y="mean",color="black",geom="line")
+
+```
+
+
+### Part 2 : Regression Analysis
+
+Now we perform the required regression to see how all the variables pan out in their importance in linear regression. 
+
+1. Plain vanilla linear regression :
+
+```{r q2_2}
+model = lm(data = q2_data,Friends ~ .)
+summary(model)
+```
+
+
+We see that plain vanilla linear regression doesn't work very well, and Likes appear to be the only significant parameter.
+
+Let's try removing some useless parameters and check. 
+We'd guess that employed,location, relationship status, and number of children won't have a great bearing on the number of friends, and we will remove them from the analysis. We'll also remove the meta factor variable created for Gender.
+
+```{r q2_2_b}
+model2 = lm(data = q2_data,Friends~Likes+Gender.+Posts+Age+Photos+Albums+Profile+Cover)
+summary(model2)
+```
+
+We see that the important variables haven't changed, now we look at using non linear predictors, and reducing the importance of intercept. We will try the polym function, with a composite 2nd degree polynomial, degree 3 or above isnt able to be fitted because of paucity of points.
+
+```{r q2_2_c}
+model3 = lm(data = q2_data, Friends ~ polym(Likes , Gender. , Age , Photos, degree = 2))
+summary(model3)
+```
+
+
+We will now only choose the top 4 terms for fitting.
+
+we see that terms with highest importance are simple linear terms, and this might not have been a great idea. 
+Now, let's try to standardize the data, to remove effects of improper scaling, and since "Friends" is atleast 1, (by means of data collection) we will try to use log(Friends) as the variable to be predicted, to further improve predictive power. 
+
+```{r q2_2_d}
+model4 = lm(data = q2_data, log(Friends) ~ polym(Likes , Gender. , Age , Photos, degree = 2))
+summary(model4)
+
+
+```
+
+We see that yet again, the intercept, likes, photos, and age take top priority, with no term containing a mix of both making it to the top. 
+
+
+Let us now try the neuralnet package to see if more improvements are possible. 
+
+
+```{r q2_2_e}
+library(neuralnet)
+set.seed(100)
+sample_size = length(q2_data$Friend.) * 0.7
+train_ind = sample(1:nrow(q2_data),sample_size)
+q2_data_train = q2_data[train_ind,c("Likes", "Gender.", "Age", "Photos","Friends")]
+q2_data_train = scale(q2_data_train)
+q2_data_test = q2_data[-train_ind,c("Likes", "Gender.", "Age", "Photos","Friends")]
+q2_data_test = scale(q2_data_test)
+nn = neuralnet(Friends~Likes+Gender.+Age+Photos,data = q2_data_train,hidden = c(3),threshold = 0.01)
+plot(nn)
+
+```
+
+
+```{r}
+summary(nn)
+```
+
+
+The resulting R^2 out of this process is : 
+```{r q2_final}
+s_yy = (nrow(q2_data_train)-1)*var(q2_data_train[,5])
+r_2_neuralnet = 1 - (nn$result.matrix["error",1])/s_yy
+cat("R^2 from neuralnet (on train) is",r_2_neuralnet,"\n")
+```
+
+While testing the same :
+```{r q2_final2}
+out_test = compute(nn,q2_data_test[,1:4])$net.result
+out_err = sqrt(sum((out_test-q2_data_test[,5])*(out_test-q2_data_test[,5])))
+s_yy_test = (nrow(q2_data_test)-1)*var(q2_data_test[,5])
+r_2_neuralTest = 1 - out_err/s_yy_test
+cat("R^2 from neuralnet (on test) is",r_2_neuralTest,"\n") #possible overfitting
+```
+
